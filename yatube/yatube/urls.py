@@ -12,8 +12,10 @@ urlpatterns = [
     path('', include('posts.urls')),
 ]
 
-handler404 = 'posts.views.page_not_found' #noqa
-handler500 = 'posts.views.server_error' #noqa
+#noqa
+handler404 = 'posts.views.page_not_found'
+#noqa
+handler500 = 'posts.views.server_error'
 
 if settings.DEBUG:
     urlpatterns += static(
