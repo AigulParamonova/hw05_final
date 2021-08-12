@@ -24,6 +24,19 @@ class PostFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        cls.uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
+
         cls.user = User.objects.create_user(username=USERNAME)
         cls.group = Group.objects.create(
             title=GROUP_TITLE,
@@ -51,23 +64,11 @@ class PostFormTests(TestCase):
     def test_new_post_create(self):
         """Валидная форма страницы /new/ создает запись в базе данных."""
         posts_count = Post.objects.count()
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00'
-            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
-            b'\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=small_gif,
-            content_type='image/gif'
-        )
         form_data = {
             'text': PostFormTests.post.text,
             'group': PostFormTests.group.id,
             'author': PostFormTests.user,
-            'image': uploaded,
+            'image': PostFormTests.uploaded,
         }
         response = self.authorized_client.post(
             URL_NEW_POST,
