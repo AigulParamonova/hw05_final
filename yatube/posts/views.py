@@ -142,17 +142,17 @@ def follow_index(request):
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     user = request.user
-    follow_check = Follow.objects.filter(user=user,author=author).exists()
+    follow_check = Follow.objects.filter(user=user, author=author).exists()
     if author != user and not follow_check:
         Follow.objects.create(user=user, author=author)
     return redirect('profile', username=username)
 
-    
+
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     user = request.user
-    follow_check = Follow.objects.filter(user=user,author=author).exists()
+    follow_check = Follow.objects.filter(user=user, author=author).exists()
     if request.user != author and follow_check:
         Follow.objects.filter(user=request.user, author=author).delete()
     return redirect('profile', username=username)
