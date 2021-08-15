@@ -4,11 +4,11 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import CommentForm, PostForm
-from .models import Comment, Follow, Group, Post, User
+from .models import Follow, Group, Post, User
 
 
 def index(request):
-    post_list = Post.objects.all()
+    post_list = Post.objects.select_related('author', 'group').all()
     paginator = Paginator(post_list, settings.MAX_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -21,7 +21,10 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = group.posts.all()
+    posts = Post.objects.select_related(
+        'group',
+        'author'
+    ).filter(group=group).all()
     paginator = Paginator(posts, settings.MAX_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -35,7 +38,9 @@ def group_posts(request, slug):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    posts = author.posts.all()
+    posts = Post.objects.select_related(
+        'author', 'group'
+    ).filter(author=author).all()
     followers = Follow.objects.filter(author=author.id).count()
     follows = Follow.objects.filter(user=author.id).count()
     following = Follow.objects.filter(
@@ -61,7 +66,7 @@ def post_view(request, username, post_id):
     posts = author.posts.all()
     post = Post.objects.get(id=post_id)
     form = CommentForm(request.POST or None)
-    comments = Comment.objects.all()
+    comments = post.comments.all()
     context = {
         'author': author,
         'posts': posts,
@@ -130,7 +135,9 @@ def add_comment(request, username, post_id):
 
 @login_required
 def follow_index(request):
-    posts = Post.objects.filter(author__following__user=request.user)
+    posts = Post.objects.filter(
+        author__following__user=request.user
+    ).select_related('author', 'group')
     paginator = Paginator(posts, settings.MAX_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)

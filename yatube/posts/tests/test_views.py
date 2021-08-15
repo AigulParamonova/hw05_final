@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+from http import HTTPStatus
 
 from django import forms
 from django.conf import settings
@@ -9,7 +10,6 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
-
 from posts.forms import PostForm
 from posts.models import Comment, Follow, Group, Post, User
 
@@ -20,7 +20,13 @@ USERNAME_3 = 'Pinky'
 GROUP_SLUG = 'ned'
 GROUP_TITLE = 'The Stark house'
 GROUP_DESC = 'Winter is coming'
+GROUP_2_TITLE = 'The Targaryen house'
+GROUP_2_SLUG = 'daenerys'
+GROUP_2_DESC = 'Flame and blood'
 POST_TEXT = 'Game of the Thrones'
+CASH_TEXT = 'Тестируем кэш'
+FOLLOWERS_POST_TEXT = 'Тестируем пост у подписчиков'
+COMMENT_TEXT = 'Тестовый комментарий'
 URL_HOMEPAGE = reverse('index')
 GROUP_POSTS = f'/group/{GROUP_SLUG}/'
 URL_NEW_POST = reverse('new_post')
@@ -29,6 +35,19 @@ URL_FOLLOW = reverse('follow_index')
 PROFILE_FOLLOW = f'/{USERNAME_2}/follow/'
 PROFILE_UNFOLLOW = f'/{USERNAME_2}/unfollow/'
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
+small_gif = (
+    b'\x47\x49\x46\x38\x39\x61\x02\x00'
+    b'\x01\x00\x80\x00\x00\x00\x00\x00'
+    b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+    b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+    b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+    b'\x0A\x00\x3B'
+)
+uploaded = SimpleUploadedFile(
+    name='small.gif',
+    content=small_gif,
+    content_type='image/gif'
+)
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
@@ -36,20 +55,6 @@ class PostsViewsTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
-        uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=small_gif,
-            content_type='image/gif'
-        )
-
         cls.user = User.objects.create_user(username=USERNAME)
         cls.user2 = User.objects.create_user(username=USERNAME_2)
         cls.user3 = User.objects.create_user(username=USERNAME_3)
@@ -61,9 +66,9 @@ class PostsViewsTest(TestCase):
         )
 
         cls.group2 = Group.objects.create(
-            title='The Targaryen house',
-            slug='daenerys',
-            description='Flame and blood'
+            title=GROUP_2_TITLE,
+            slug=GROUP_2_SLUG,
+            description=GROUP_2_DESC
         )
 
         cls.post = Post.objects.create(
@@ -214,13 +219,13 @@ class PostsViewsTest(TestCase):
     def test_server_check_error_404(self):
         """Сервер возвращает код 404, если страница не найдена."""
         response = self.authorized_client.get(handler404)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_index_in_cache_check(self):
         """Посты главной страницы хранятся в кэше."""
         response = self.authorized_client.get(URL_HOMEPAGE)
         post = Post.objects.create(
-            text='Тестируем кэш',
+            text=CASH_TEXT,
             author=PostsViewsTest.user
         )
         page = response.content
@@ -254,7 +259,7 @@ class PostsViewsTest(TestCase):
         """
         self.authorized_follower.get(PROFILE_FOLLOW)
         form_data = {
-            'text': 'Тестируем пост у подписчиков',
+            'text': FOLLOWERS_POST_TEXT,
             'author': PostsViewsTest.user2,
         }
         self.authorized_author.post(
@@ -273,7 +278,7 @@ class PostsViewsTest(TestCase):
         form_data = {
             'post': PostsViewsTest.post,
             'author': PostsViewsTest.user,
-            'text': 'Тестовый комментарий',
+            'text': COMMENT_TEXT,
         }
         self.authorized_client.post(
             PostsViewsTest.URL_COMMENT,
@@ -283,6 +288,6 @@ class PostsViewsTest(TestCase):
         self.assertEqual(Comment.objects.count(), comment + 1)
         self.assertTrue(
             Comment.objects.filter(
-                text='Тестовый комментарий',
+                text=COMMENT_TEXT,
             ), form_data['text']
         )

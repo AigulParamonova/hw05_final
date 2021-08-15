@@ -1,7 +1,8 @@
+from http import HTTPStatus
+
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-
 from posts.models import Group, Post, User
 
 User = get_user_model()
@@ -43,26 +44,26 @@ class PostsURLTests(TestCase):
     def test_url_homepage(self):
         """Главная страница доступна любому пользователю."""
         response = self.guest_client.get(URL_HOMEPAGE)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_url_post_edit_for_guest(self):
         """Страница 'post_edit'недоступна
         для неавторизованного пользователя.
         """
         response = self.guest_client.get(PostsURLTests.URL_POST_EDIT)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_url_post_edit_for_authorized_client(self):
         """Страница 'post_edit' недоступна
         для авторизованного пользователя.
         """
         response = self.client.get(PostsURLTests.URL_POST_EDIT)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_url_post_edit_for_author(self):
         """Страница 'post_edit' доступна для автора."""
         response = self.authorized_client.get(PostsURLTests.URL_POST_EDIT)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_post_edit_redirect_anonymous_on_admin_login(self):
         """Страница 'post_edit' перенаправит
@@ -86,7 +87,7 @@ class PostsURLTests(TestCase):
         for url in url_names:
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_template(self):
         """URL-адрес использует соответствующий шаблон."""
