@@ -41,12 +41,6 @@ def profile(request, username):
     posts = Post.objects.select_related(
         'author', 'group'
     ).filter(author=author).all()
-    followers = Follow.objects.filter(author=author.id).count()
-    follows = Follow.objects.filter(user=author.id).count()
-    following = Follow.objects.filter(
-        user=request.user.id,
-        author=author.id
-    ).all()
     paginator = Paginator(posts, settings.MAX_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -54,9 +48,6 @@ def profile(request, username):
         'page': page,
         'author': author,
         'posts': posts,
-        'followers': followers,
-        'follows': follows,
-        'following': following,
     }
     return render(request, 'posts/profile.html', context)
 
@@ -66,13 +57,11 @@ def post_view(request, username, post_id):
     posts = author.posts.all()
     post = Post.objects.get(id=post_id)
     form = CommentForm(request.POST or None)
-    comments = post.comments.all()
     context = {
         'author': author,
         'posts': posts,
         'post': post,
         'form': form,
-        'comments': comments,
     }
     return render(request, 'posts/post.html', context)
 
